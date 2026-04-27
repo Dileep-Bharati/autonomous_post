@@ -84,18 +84,25 @@ def generate_content(topics: list) -> str:
     topics_list_str = "\n".join([f"- {t}" for t in topics])
     prompt = f"Here are today's top trending topics from 10 different countries:\n{topics_list_str}\n\nPlease evaluate them, select the absolute best one for global reach, and create the content based on the system instructions."
     
-    try:
-        response = model.generate_content(
-            contents=[
-                {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
-                {"role": "user", "parts": [{"text": prompt}]}
-            ]
-        )
-        logger.info("Content successfully generated.")
-        return response.text
-    except Exception as e:
-        logger.error(f"Error generating content: {e}")
-        raise
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = model.generate_content(
+                contents=[
+                    {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
+                    {"role": "user", "parts": [{"text": prompt}]}
+                ]
+            )
+            logger.info("Content successfully generated.")
+            return response.text
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                logger.warning(f"Rate limit hit (429). Waiting 60 seconds before retry {attempt + 1}/{max_retries}...")
+                time.sleep(60)
+            else:
+                logger.error(f"Error generating content: {e}")
+                raise
 
 if __name__ == "__main__":
     # For local testing, ensure GEMINI_API_KEY is exported in your shell
