@@ -5,9 +5,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def send_to_telegram(content: str, date_str: str):
+def send_to_telegram(md_content: str, html_content: str, date_str: str):
     """
-    Sends the generated content to a Telegram chat as a markdown document.
+    Sends the generated content to a Telegram chat as a markdown and html document.
     """
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -21,25 +21,48 @@ def send_to_telegram(content: str, date_str: str):
     # We send it as a document so we don't hit the 4096 character limit of regular messages
     url = f"https://api.telegram.org/bot{token}/sendDocument"
     
-    # Create an in-memory file
-    file_name = f"Daily_Post_{date_str}.md"
-    file_bytes = io.BytesIO(content.encode('utf-8'))
+    # 1. Send Markdown File
+    md_file_name = f"Daily_Post_{date_str}.md"
+    md_file_bytes = io.BytesIO(md_content.encode('utf-8'))
     
-    files = {
-        'document': (file_name, file_bytes, 'text/markdown')
+    md_files = {
+        'document': (md_file_name, md_file_bytes, 'text/markdown')
     }
     
-    data = {
+    md_data = {
         'chat_id': chat_id,
-        'caption': f"🚀 Here is your highly-rated, automated content for {date_str}!"
+        'caption': f"🚀 Here is your Markdown content for {date_str}!"
     }
     
     try:
-        response = requests.post(url, data=data, files=files)
+        response = requests.post(url, data=md_data, files=md_files)
         response.raise_for_status()
-        logger.info("Successfully sent document to Telegram.")
+        logger.info("Successfully sent Markdown document to Telegram.")
     except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to send to Telegram: {e}")
+        logger.error(f"Failed to send Markdown to Telegram: {e}")
+        if response is not None:
+            logger.error(f"Telegram API Response: {response.text}")
+        raise
+
+    # 2. Send HTML File
+    html_file_name = f"Daily_Post_{date_str}.html"
+    html_file_bytes = io.BytesIO(html_content.encode('utf-8'))
+    
+    html_files = {
+        'document': (html_file_name, html_file_bytes, 'text/html')
+    }
+    
+    html_data = {
+        'chat_id': chat_id,
+        'caption': f"🌐 Here is your HTML formatted content for {date_str}!"
+    }
+    
+    try:
+        response = requests.post(url, data=html_data, files=html_files)
+        response.raise_for_status()
+        logger.info("Successfully sent HTML document to Telegram.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to send HTML to Telegram: {e}")
         if response is not None:
             logger.error(f"Telegram API Response: {response.text}")
         raise
@@ -47,6 +70,6 @@ def send_to_telegram(content: str, date_str: str):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     try:
-        send_to_telegram("# Test\nThis is a test document from Antigravity.", "2026_04_27")
+        send_to_telegram("# Test\nThis is a test document from Antigravity.", "<h1>Test</h1><p>This is a test document from Antigravity.</p>", "2026_04_27")
     except Exception as ex:
         print(f"Failed: {ex}")

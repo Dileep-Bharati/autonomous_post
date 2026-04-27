@@ -73,7 +73,7 @@ def main():
     
     # 4. Deliver via Telegram
     try:
-        send_to_telegram(final_output, date_str)
+        send_to_telegram(final_output, html_wrapper, date_str)
         logger.info("=== Pipeline Completed Successfully ===")
     except Exception as e:
         logger.error(f"Pipeline failed at Telegram delivery: {e}")
