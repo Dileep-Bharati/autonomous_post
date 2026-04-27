@@ -34,6 +34,7 @@ def send_to_telegram(md_content: str, html_content: str, date_str: str):
         'caption': f"🚀 Here is your Markdown content for {date_str}!"
     }
     
+    response = None
     try:
         response = requests.post(url, data=md_data, files=md_files)
         response.raise_for_status()
@@ -57,6 +58,7 @@ def send_to_telegram(md_content: str, html_content: str, date_str: str):
         'caption': f"🌐 Here is your HTML formatted content for {date_str}!"
     }
     
+    response = None
     try:
         response = requests.post(url, data=html_data, files=html_files)
         response.raise_for_status()
