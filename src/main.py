@@ -29,7 +29,7 @@ def main():
         return
         
     # 3. Format output
-    date_str = datetime.now().strftime("%Y_%m_%d")
+    date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     
     topics_list_str = "\n".join([f"- {t}" for t in topics])
     
