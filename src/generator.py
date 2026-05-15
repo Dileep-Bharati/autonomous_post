@@ -17,6 +17,7 @@ Follow these strict rules:
 3. The content MUST have a 10/10 "Global Reach" rating (appeals to people worldwide, transcending local boundaries). You must explicitly explain *why* it hits this global reach.
 4. The posts must be written in a way that makes people extremely curious, helps them understand the topic easily, and makes them eagerly wait for your next post.
 5. You must suggest strategic comments to post on your own content to boost the algorithm and get global reach.
+6. CRITICAL: You must include the exact URL of the news source that you selected as the basis for the content.
 
 Format your response exactly as follows, using Markdown:
 
@@ -41,10 +42,13 @@ Format your response exactly as follows, using Markdown:
 ## 📸 4. Instagram Caption
 (Write an aesthetic, engaging Instagram caption. Include spacing and a good mix of emojis. Provide 10-15 high-reach hashtags.)
 
-## 💬 5. Strategic Engagement Comments
+## 🔗 5. Source Credits
+(Provide the exact source URL of the winning topic here, formatted exactly as "Source: [URL]")
+
+## 💬 6. Strategic Engagement Comments
 (Provide 2-3 comments the user should immediately post on their own IG/FB post to spark discussion and game the algorithm for global reach.)
 
-## 🏆 6. Evaluation
+## 🏆 7. Evaluation
 **Quality Rating:** 10/10
 *Why:* (Explain why this content is a 10/10)
 
@@ -81,7 +85,7 @@ def generate_content(topics: list) -> str:
     model = genai.GenerativeModel(selected_model_name)
     
     # Format the topics into a bulleted list for the AI
-    topics_list_str = "\n".join([f"- {t}" for t in topics])
+    topics_list_str = "\n".join([f"- {t['topic']} (URL: {t['url']})" for t in topics])
     prompt = f"Here are today's top trending topics from 10 different countries:\n{topics_list_str}\n\nPlease evaluate them, select the absolute best one for global reach, and create the content based on the system instructions."
     
     import time
@@ -108,7 +112,7 @@ if __name__ == "__main__":
     # For local testing, ensure GEMINI_API_KEY is exported in your shell
     logging.basicConfig(level=logging.INFO)
     try:
-        result = generate_content(["The future of space travel", "AI Advancements"])
+        result = generate_content([{"topic": "The future of space travel", "url": "http://example.com/space"}, {"topic": "AI Advancements", "url": "http://example.com/ai"}])
         print("\n--- GENERATED CONTENT ---\n")
         print(result)
     except Exception as ex:

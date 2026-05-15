@@ -9,7 +9,7 @@ def get_global_trending_topics():
     """
     Fetches the top news/trending topics from 10 major countries using Google News RSS.
     This completely bypasses the Google Trends 404 block.
-    Returns a list of trending topics.
+    Returns a list of dictionaries with 'topic' and 'url' keys.
     """
     # Google News RSS parameters for 10 countries
     countries_rss = {
@@ -42,28 +42,36 @@ def get_global_trending_topics():
             
             # Parse XML
             root = ET.fromstring(response.content)
-            items = root.findall('.//item/title')
+            items = root.findall('.//item')
             
             # Grab top 2 stories
             if len(items) >= 2:
                 # Remove the "- Source Name" at the end of Google News titles for cleaner topics
-                top_1 = items[0].text.rsplit(' - ', 1)[0]
-                top_2 = items[1].text.rsplit(' - ', 1)[0]
-                global_topics.add(top_1)
-                global_topics.add(top_2)
+                top_1_title = items[0].find('title').text.rsplit(' - ', 1)[0]
+                top_1_link = items[0].find('link').text
+                top_2_title = items[1].find('title').text.rsplit(' - ', 1)[0]
+                top_2_link = items[1].find('link').text
+                
+                # Using a tuple to add to set to avoid duplicates
+                global_topics.add((top_1_title, top_1_link))
+                global_topics.add((top_2_title, top_2_link))
                 
             time.sleep(1) # Be polite to the server
             
         except Exception as e:
             logger.warning(f"Could not fetch trends for {country}. Skipping. Error: {e}")
             
-    # If we successfully got topics, return them as a list
+    # If we successfully got topics, return them as a list of dicts
     if global_topics:
         logger.info(f"Successfully gathered {len(global_topics)} unique real-time topics from around the world.")
-        return list(global_topics)
+        return [{"topic": t[0], "url": t[1]} for t in global_topics]
     else:
         logger.warning("Could not fetch any topics globally. Using fallback topics.")
-        return ["Artificial Intelligence breakthroughs", "Climate Change Solutions", "Space Exploration"]
+        return [
+            {"topic": "Artificial Intelligence breakthroughs", "url": "https://news.google.com"},
+            {"topic": "Climate Change Solutions", "url": "https://news.google.com"},
+            {"topic": "Space Exploration", "url": "https://news.google.com"}
+        ]
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
