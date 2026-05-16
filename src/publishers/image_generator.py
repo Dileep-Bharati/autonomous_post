@@ -36,17 +36,15 @@ def wrap_text(text, font, max_width, draw):
         lines.append(" ".join(current_line))
     return lines
 
-def upload_to_catbox(file_path: str) -> str:
-    logger.info(f"Uploading {file_path} to catbox.moe to get a public URL...")
-    url = "https://catbox.moe/user/api.php"
+def upload_image(file_path: str) -> str:
+    logger.info(f"Uploading {file_path} to uguu.se to get a public URL...")
+    url = "https://uguu.se/upload.php"
     with open(file_path, 'rb') as f:
-        files = {
-            'reqtype': (None, 'fileupload'),
-            'fileToUpload': (os.path.basename(file_path), f, 'image/jpeg')
-        }
-        res = requests.post(url, files=files)
+        files = {'files[]': (os.path.basename(file_path), f, 'image/jpeg')}
+        res = requests.post(url, files=files, timeout=30)
         res.raise_for_status()
-        return res.text.strip()
+        data = res.json()
+        return data['files'][0]['url']
 
 def generate_image(topic: str, date_str: str) -> str:
     """
@@ -112,7 +110,7 @@ def generate_image(topic: str, date_str: str) -> str:
         logger.info(f"Text overlay successfully applied.")
         
         # 3. Upload to public host
-        public_url = upload_to_catbox(image_filename)
+        public_url = upload_image(image_filename)
         logger.info(f"Image successfully uploaded to {public_url}")
         
         return image_filename, public_url

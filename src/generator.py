@@ -37,7 +37,7 @@ Format your response exactly as follows, using Markdown:
 (Write a 3-5 tweet thread. Use emojis. Make it punchy. Include a hook in the first tweet. End with a tease for the next post.)
 
 ## 📘 3. Facebook Post
-(Write an engaging post suitable for Facebook. Ask a question to drive comments.)
+(Write an engaging post suitable for Facebook. Ask a question to drive comments. Do NOT include any image or video suggestions, descriptions, or ideas — write ONLY the post text.)
 
 ## 📸 4. Instagram Caption
 (Write an aesthetic, engaging Instagram caption. Include spacing and a good mix of emojis. Provide 10-15 high-reach hashtags.)
