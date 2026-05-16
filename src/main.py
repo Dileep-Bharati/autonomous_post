@@ -95,13 +95,13 @@ def main():
     except Exception as e:
         publish_results.append(f"❌ Instagram Failed: {e}")
         
-    try:
-        if twitter_thread:
-            tw = TwitterPublisher()
-            tw_url = tw.publish(twitter_thread)
-            publish_results.append(f"✅ Twitter: {tw_url}")
-    except Exception as e:
-        publish_results.append(f"❌ Twitter Failed: {e}")
+    # try:
+    #     if twitter_thread:
+    #         tw = TwitterPublisher()
+    #         tw_url = tw.publish(twitter_thread)
+    #         publish_results.append(f"✅ Twitter: {tw_url}")
+    # except Exception as e:
+    #     publish_results.append(f"❌ Twitter Failed: {e}")
 
     # 7. Save Website HTML to website/ folder
     os.makedirs("website", exist_ok=True)
