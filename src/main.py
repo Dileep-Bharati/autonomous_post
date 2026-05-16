@@ -143,7 +143,7 @@ def main():
     summary += "\n".join(publish_results)
     
     try:
-        send_to_telegram(content, markdown.markdown(summary), date_str)
+        send_to_telegram(content, markdown.markdown(summary), date_str, image_path)
         logger.info("=== Pipeline Completed Successfully ===")
     except Exception as e:
         logger.error(f"Pipeline failed at Telegram delivery: {e}")

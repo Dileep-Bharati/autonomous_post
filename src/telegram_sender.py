@@ -5,9 +5,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def send_to_telegram(md_content: str, html_content: str, date_str: str):
+def send_to_telegram(md_content: str, html_content: str, date_str: str, image_filename: str = None):
     """
-    Sends the generated content to a Telegram chat as a markdown and html document.
+    Sends the generated content to a Telegram chat as a markdown and html document, and sends the image.
     """
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -68,6 +68,28 @@ def send_to_telegram(md_content: str, html_content: str, date_str: str):
         if response is not None:
             logger.error(f"Telegram API Response: {response.text}")
         raise
+
+    # 3. Send Image File
+    if image_filename and os.path.exists(image_filename):
+        photo_url = f"https://api.telegram.org/bot{token}/sendPhoto"
+        with open(image_filename, 'rb') as photo_file:
+            photo_files = {
+                'photo': photo_file
+            }
+            photo_data = {
+                'chat_id': chat_id,
+                'caption': f"📸 Image for {date_str}"
+            }
+            try:
+                photo_res = requests.post(photo_url, data=photo_data, files=photo_files)
+                photo_res.raise_for_status()
+                logger.info("Successfully sent Image to Telegram.")
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Failed to send Image to Telegram: {e}")
+                if photo_res is not None:
+                    logger.error(f"Telegram API Response: {photo_res.text}")
+                # We don't raise here so the pipeline still finishes successfully even if image fails
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
