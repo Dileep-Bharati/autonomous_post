@@ -21,6 +21,14 @@ def extract_section(content: str, header: str) -> str:
     match = re.search(pattern, content, re.DOTALL)
     return match.group(1).strip() if match else ""
 
+def extract_selected_topic(content: str) -> str:
+    """Extracts the AI-selected topic title from the generated content."""
+    # Looks for: # Selected Topic: [title] or # Selected Topic: [title]
+    match = re.search(r"#+ Selected Topic:\s*(.+)", content)
+    if match:
+        return match.group(1).strip()
+    return ""
+
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
@@ -71,10 +79,13 @@ def main():
         instagram_caption += f"\n\n{source_credits}"
 
     # 5. Generate Image for Instagram
-    # We use the top topic title for the image prompt
-    top_topic_title = topics[0]['topic'] if topics else "Trending News"
+    # Use the AI-selected topic (not the raw list) so the image always matches the content
+    selected_topic = extract_selected_topic(content)
+    if not selected_topic:
+        selected_topic = topics[0]['topic'] if topics else "Trending News"
+    logger.info(f"Generating image for AI-selected topic: {selected_topic}")
     date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    image_path, image_url = generate_image(top_topic_title, date_str)
+    image_path, image_url = generate_image(selected_topic, date_str)
     
     # 6. Publish to Social Media (Safely wrapped in try/except so one failure doesn't break others)
     publish_results = []

@@ -12,12 +12,14 @@ Then, SELECT THE SINGLE BEST TOPIC (the one with the highest rating) to write ab
 Once you have selected the top topic, your goal is to write a highly engaging, viral set of posts based on it.
 
 Follow these strict rules:
-1. MUST use simple, human-readable English. Do not use overly complex vocabulary. Write like you are speaking to a curious friend.
-2. The final content MUST be rated 10/10 for quality. You must explicitly include a section explaining *why* it is a 10/10.
-3. The content MUST have a 10/10 "Global Reach" rating (appeals to people worldwide, transcending local boundaries). You must explicitly explain *why* it hits this global reach.
-4. The posts must be written in a way that makes people extremely curious, helps them understand the topic easily, and makes them eagerly wait for your next post.
-5. You must suggest strategic comments to post on your own content to boost the algorithm and get global reach.
-6. CRITICAL: You must include the exact URL of the news source that you selected as the basis for the content.
+1. ULTRA-SIMPLE ENGLISH IS MANDATORY. Write as if explaining to a 5-year-old child. Use very short sentences. Use small, everyday words. NEVER use big or complicated words. If you think of a complicated word, replace it with a simpler one. Example: Instead of "exacerbate", say "make worse". Instead of "subsequently", say "then". Instead of "individuals", say "people".
+2. Keep every sentence under 15 words. Break long thoughts into multiple short sentences.
+3. Use emojis generously to help explain feelings and ideas visually.
+4. The final content MUST be rated 10/10 for quality. You must explicitly include a section explaining *why* it is a 10/10.
+5. The content MUST have a 10/10 "Global Reach" rating (appeals to people worldwide, transcending local boundaries). You must explicitly explain *why* it hits this global reach.
+6. The posts must make people extremely curious and eager to learn more.
+7. You must suggest strategic comments to post on your own content to boost the algorithm and get global reach.
+8. CRITICAL: You must include the exact URL of the news source that you selected as the basis for the content.
 
 Format your response exactly as follows, using Markdown:
 
@@ -31,16 +33,16 @@ Format your response exactly as follows, using Markdown:
 # Selected Topic: [Insert The One Topic With The Highest Rating]
 
 ## 📝 1. Website Blog Post
-(Write a compelling, easy-to-read blog post. Include an engaging title and a strong hook. End with a cliffhanger or a tease for the next post.)
+(Write a compelling, easy-to-read blog post. Use very simple words. Short sentences only. Include an engaging title and a strong hook. End with a cliffhanger or a tease for the next post.)
 
 ## 🐦 2. Twitter Thread
-(Write a 3-5 tweet thread. Use emojis. Make it punchy. Include a hook in the first tweet. End with a tease for the next post.)
+(Write a 3-5 tweet thread. Use emojis. Very short and punchy sentences. Include a hook in the first tweet. End with a tease for the next post.)
 
 ## 📘 3. Facebook Post
-(Write an engaging post suitable for Facebook. Ask a question to drive comments. Do NOT include any image or video suggestions, descriptions, or ideas — write ONLY the post text.)
+(Write an engaging post suitable for Facebook. Use very simple words a child can understand. Ask a question to drive comments. Do NOT include any image or video suggestions, descriptions, or ideas — write ONLY the post text.)
 
 ## 📸 4. Instagram Caption
-(Write an aesthetic, engaging Instagram caption. Include spacing and a good mix of emojis. Provide 10-15 high-reach hashtags.)
+(Write an aesthetic, engaging Instagram caption. Use very simple words. Include spacing and a good mix of emojis. Provide 10-15 high-reach hashtags.)
 
 ## 🔗 5. Source Credits
 (Provide the exact source URL of the winning topic here, formatted exactly as "Source: [URL]")
