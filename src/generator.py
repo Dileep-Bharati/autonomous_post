@@ -1,98 +1,124 @@
 import os
 import logging
+import time
+import re
 import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """
-You are an expert, world-class social media manager and copywriter.
-You will be given a list of today's top trending topics from multiple countries around the world.
-Your first task is to evaluate EVERY SINGLE TOPIC from the list. Give each topic a "Global Viral Potential" rating out of 10, and a 1-sentence reason why.
-Then, SELECT THE SINGLE BEST TOPIC (the one with the highest rating) to write about.
-Once you have selected the top topic, your goal is to write a highly engaging, viral set of posts based on it.
+PROMPT_1 = """
+You are the "Executive Editor" inside an automated newsroom system. Analyze the 20 incoming international trending topics scraped from Google Trends.
 
-Follow these strict rules:
-1. ULTRA-SIMPLE ENGLISH IS MANDATORY. Write as if explaining to a 5-year-old child. Use very short sentences. Use small, everyday words. NEVER use big or complicated words. If you think of a complicated word, replace it with a simpler one. Example: Instead of "exacerbate", say "make worse". Instead of "subsequently", say "then". Instead of "individuals", say "people".
-2. Keep every sentence under 15 words. Break long thoughts into multiple short sentences.
-3. Use emojis generously to help explain feelings and ideas visually.
-4. The final content MUST be rated 10/10 for quality. You must explicitly include a section explaining *why* it is a 10/10.
-5. The content MUST have a 10/10 "Global Reach" rating (appeals to people worldwide, transcending local boundaries). You must explicitly explain *why* it hits this global reach.
-6. The posts must make people extremely curious and eager to learn more.
-7. You must suggest strategic comments to post on your own content to boost the algorithm and get global reach.
-8. CRITICAL: You must include the exact URL of the news source that you selected as the basis for the content.
+CRITICAL FILTERING RULES:
+- IGNORE: Localized politics or dry, technical news. 
+- IGNORE: Sensitive medical/health crises (like virus outbreaks or pandemics) that trigger platform shadowbans or auto-deletions.
+- PRIORITIZE: Universal human interest, highly debatable cultural topics, or massive tech/AI breakthroughs that bridge international audiences.
 
-Format your response exactly as follows, using Markdown:
+SCORING TASK:
+1. Rate each of the 20 raw topics out of 10 based on "Global Viral Potential."
+2. Select the single highest-rated topic as the winner. Mark it as "10/10 WINNER".
+3. Maintain and isolate the original source URL attached to that winner.
 
-# 🧠 Global Topic Analysis
-(List EVERY topic provided to you. For each, give a rating out of 10 and a brief reason. Example:
-- **[Topic Name]**: 4/10 - Too local, won't appeal globally.
-- **[Topic Name]**: 10/10 - Universal human interest, highly debateable.)
-
----
-
-# Selected Topic: [Insert The One Topic With The Highest Rating]
-
-## 📝 1. Website Blog Post
-(Write a compelling, easy-to-read blog post. Use very simple words. Short sentences only. Include an engaging title and a strong hook. End with a cliffhanger or a tease for the next post.)
-
-## 🐦 2. Twitter Thread
-(Write a 3-5 tweet thread. Use emojis. Very short and punchy sentences. Include a hook in the first tweet. End with a tease for the next post.)
-
-## 📘 3. Facebook Post
-(Write an engaging post suitable for Facebook. Use very simple words a child can understand. Ask a question to drive comments. Do NOT include any image or video suggestions, descriptions, or ideas — write ONLY the post text.)
-
-## 📸 4. Instagram Caption
-(Write an aesthetic, engaging Instagram caption. Use very simple words. Include spacing and a good mix of emojis. Provide 10-15 high-reach hashtags.)
-
-## 🔗 5. Source Credits
-(Provide the exact source URL of the winning topic here, formatted exactly as "Source: [URL]")
-
-## 💬 6. Strategic Engagement Comments
-(Provide 2-3 comments the user should immediately post on their own IG/FB post to spark discussion and game the algorithm for global reach.)
-
-## 🏆 7. Evaluation
-**Quality Rating:** 10/10
-*Why:* (Explain why this content is a 10/10)
-
-**Global Reach Rating:** 10/10
-*Why:* (Explain why this will appeal globally)
+OUTPUT STRUCTURE:
+[Topic 1] - [Score]/10
+...
+WINNER_TOPIC: [Title of Winning Topic]
+WINNER_URL: [Source URL from trends.py]
 """
 
-def generate_content(topics: list) -> str:
-    """
-    Calls the Gemini API to select the best topic from a list and generate the posts.
-    Returns the generated markdown string.
-    """
-    logger.info(f"Generating content from {len(topics)} potential global topics...")
-    
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        logger.error("GEMINI_API_KEY environment variable is not set.")
-        raise ValueError("GEMINI_API_KEY is required to generate content.")
+PROMPT_2 = """
+You are a world-class Viral Content Creator and Creative Director. Take the provided WINNER_TOPIC and write a full content text suite containing a Website Blog Post, a Facebook Post, an Instagram Caption, and an X (Twitter) Thread.
 
-    genai.configure(api_key=api_key)
-    
-    # Dynamically find the best available model for your API key
-    # gemini-2.5-flash: best quality, 20 free requests/day.
-    # GitHub Actions runs once daily so this quota is more than sufficient.
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    logger.info("Using model: gemini-2.5-flash")
-    
-    # Format the topics into a bulleted list for the AI
-    topics_list_str = "\n".join([f"- {t['topic']} (URL: {t['url']})" for t in topics])
-    prompt = f"Here are today's top trending topics from 10 different countries:\n{topics_list_str}\n\nPlease evaluate them, select the absolute best one for global reach, and create the content based on the system instructions."
-    
-    import time
+WRITING MANDATES:
+1. THE HOOK: Start with a sharp, counter-intuitive statement or result-first hook in the very first line. No slow introductions.
+2. STRUCTURE: Apply the PAS (Problem-Agitation-Solution) framework for social media posts, and the AIDA framework for the blog post.
+3. VISUAL FORMATTING: Enforce extreme mobile skimmability. You must use one-sentence paragraphs, generous white space, and bold key phrases.
+4. TONE: Conversational, authoritative, and native to natural human speech.
+
+CREATIVE DIRECTION MANDATES (IMAGE OVERLAY):
+1. IMAGE PROMPT GENERATION: Generate a highly descriptive, cinematic, high-contrast prompt optimized for an AI Image Generator to build a background image representing the winning topic.
+2. IMAGE EDITING BLUEPRINT: Create a step-by-step text instruction set for the automated image editor to overlay the 10/10 winning topic title cleanly onto the lower half of the generated image (using a semi-transparent dark header bar and bold white overlay text).
+
+WINNER_TOPIC: {winner_topic}
+
+OUTPUT STRUCTURE:
+---
+[RAW_BLOG_DRAFT]
+---
+[RAW_FACEBOOK_DRAFT]
+---
+[RAW_INSTAGRAM_DRAFT]
+---
+[RAW_X_THREAD_DRAFT]
+---
+[RAW_IMAGE_PROMPT]
+---
+[IMAGE_EDITING_BLUEPRINT]
+---
+"""
+
+PROMPT_3 = """
+You are a strict Corporate Attorney. Audit and rewrite the provided text drafts and creative direction instructions against legal liabilities and platform signatures.
+
+REWRITE MANDATES:
+1. THE DE-AI CLEANSE: Delete and replace all robotic AI clichés: "delve", "tapestry", "in conclusion", "furthermore", "revolutionary", "pivotal", "vital", "masterclass". Replace them with punchy human verbs.
+2. DEFAMATION & SAFETY: Ensure all critiques are framed around objective, fact-based phrases. Strip out subjective defamatory terms like "scam" or "fraud".
+3. PLATFORM LIMITS: Keep Facebook and Instagram captions under 2,200 characters. For X (Twitter), ensure no single tweet draft exceeds 280 characters. Format the blog in clean Markdown hierarchy (## and ###).
+
+RAW TEXT TO AUDIT:
+{raw_text}
+"""
+
+PROMPT_4 = """
+You are "Agent 4 (The Fact, Link & Asset Validator)." Your final job is to inject the verified source reference URL into the content suite, bundle the finalized text strings with your image execution commands, and output the structure destined for your Telegram .md and .html files.
+
+LINK & IMAGE BUNDLING MANDATES:
+1. For the Website Blog Post: Add a concluding section called "### 🌐 References & Fact-Checking" and insert the WINNER_URL as a markdown link.
+2. For the Facebook Post: Ensure this post is explicitly marked to include the newly generated and edited image. End the post natively with: "👉 Read the full verified source and fact-check here: [WINNER_URL]"
+3. For the Instagram Caption: Ensure this caption is paired with the newly generated image. Append this line before your hashtags: "🔗 Verified source link available in our bio! Fact-check the full story."
+4. For the X (Twitter) Thread: Structure the text into numbered blocks (e.g., [1/3], [2/3]) so it can be easily copied and manually posted. The final tweet in the thread must read: "🔗 Read the full verified story and fact-check here: [WINNER_URL]"
+
+TECHNICAL OUTPUT ONLY:
+Do not include any conversational meta-commentary, friendly introductions, or summaries. Output ONLY the raw production-ready payload strings.
+
+WINNER_URL TO USE: {winner_url}
+AUDITED CONTENT: 
+{audited_content}
+
+FINAL PAYLOAD OUTPUT STRUCTURING:
+---
+[IMAGE_GENERATOR_THUMBNAIL_PROMPT]
+...
+---
+[IMAGE_EDITING_BLUEPRINT_FOR_INSTA_AND_FB]
+...
+---
+[FINAL_BLOG_TITLE]
+...
+[FINAL_BLOG_BODY_MARKDOWN WITH REFERENCES]
+---
+[FINAL_SOCIAL_CAPTION_FACEBOOK WITH IMAGE BINDING & VERIFIED LINK]
+...
+---
+[FINAL_SOCIAL_CAPTION_INSTAGRAM WITH IMAGE BINDING & BIO TEXT]
+...
+---
+[FINAL_X_THREAD_FOR_MANUAL_POSTING]
+...
+---
+"""
+
+def _call_gemini(model, prompt_text: str, role_system_prompt: str = None) -> str:
     max_retries = 3
+    
+    contents = []
+    if role_system_prompt:
+        contents.append({"role": "user", "parts": [{"text": role_system_prompt}]})
+    contents.append({"role": "user", "parts": [{"text": prompt_text}]})
+    
     for attempt in range(max_retries):
         try:
-            response = model.generate_content(
-                contents=[
-                    {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
-                    {"role": "user", "parts": [{"text": prompt}]}
-                ]
-            )
-            logger.info("Content successfully generated.")
+            response = model.generate_content(contents=contents)
             return response.text
         except Exception as e:
             if "429" in str(e) and attempt < max_retries - 1:
@@ -101,13 +127,67 @@ def generate_content(topics: list) -> str:
             else:
                 logger.error(f"Error generating content: {e}")
                 raise
+    return ""
+
+def generate_content_chain(topics: list) -> tuple[str, str, str]:
+    """
+    Executes the 4-step AI agent chain.
+    Returns: (final_payload_markdown, winner_topic, winner_url)
+    """
+    logger.info("Initializing 4-Prompt Multi-Agent Chain...")
+    
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY is required.")
+
+    genai.configure(api_key=api_key)
+    # Using gemini-2.5-flash as requested
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    
+    # === AGENT 1: Executive Editor ===
+    logger.info("Agent 1 (Executive Editor) is filtering topics...")
+    topics_list_str = "\n".join([f"- {t['topic']} (URL: {t['url']})" for t in topics])
+    res1 = _call_gemini(model, f"Here are the 20 raw topics:\n{topics_list_str}", PROMPT_1)
+    
+    winner_topic = ""
+    winner_url = ""
+    match_topic = re.search(r"WINNER_TOPIC:\s*(.+)", res1, re.IGNORECASE)
+    if match_topic:
+        winner_topic = match_topic.group(1).strip()
+    match_url = re.search(r"WINNER_URL:\s*(.+)", res1, re.IGNORECASE)
+    if match_url:
+        winner_url = match_url.group(1).strip()
+        
+    if not winner_topic:
+        logger.warning("Failed to extract WINNER_TOPIC. Falling back to top topic.")
+        winner_topic = topics[0]['topic']
+        winner_url = topics[0]['url']
+        
+    logger.info(f"Agent 1 selected: {winner_topic}")
+    
+    # === AGENT 2: Creative Director ===
+    logger.info("Agent 2 (Creative Director) is writing raw drafts...")
+    prompt2_filled = PROMPT_2.replace("{winner_topic}", winner_topic)
+    res2 = _call_gemini(model, prompt2_filled)
+    
+    # === AGENT 3: Corporate Attorney ===
+    logger.info("Agent 3 (Corporate Attorney) is auditing drafts for safety & cliches...")
+    prompt3_filled = PROMPT_3.replace("{raw_text}", res2)
+    res3 = _call_gemini(model, prompt3_filled)
+    
+    # === AGENT 4: Asset Validator ===
+    logger.info("Agent 4 (Asset Validator) is formatting final payload...")
+    prompt4_filled = PROMPT_4.replace("{winner_url}", winner_url).replace("{audited_content}", res3)
+    res4 = _call_gemini(model, prompt4_filled)
+    
+    logger.info("4-Prompt Chain successfully completed.")
+    return res4, winner_topic, winner_url
 
 if __name__ == "__main__":
-    # For local testing, ensure GEMINI_API_KEY is exported in your shell
     logging.basicConfig(level=logging.INFO)
     try:
-        result = generate_content([{"topic": "The future of space travel", "url": "http://example.com/space"}, {"topic": "AI Advancements", "url": "http://example.com/ai"}])
-        print("\n--- GENERATED CONTENT ---\n")
-        print(result)
+        payload, t, u = generate_content_chain([{"topic": "The future of space travel", "url": "http://example.com/space"}])
+        print("\n--- FINAL PAYLOAD ---\n")
+        print(payload)
     except Exception as ex:
         print(f"Failed: {ex}")

@@ -8,8 +8,7 @@ load_dotenv()
 import re
 import markdown
 from trends import get_global_trending_topics
-from generator import generate_content
-from editor import edit_content
+from generator import generate_content_chain
 from telegram_sender import send_to_telegram
 from publishers.image_generator import generate_image
 from publishers.facebook_publisher import FacebookPublisher
@@ -17,17 +16,10 @@ from publishers.instagram_publisher import InstagramPublisher
 from publishers.twitter_publisher import TwitterPublisher
 
 def extract_section(content: str, header: str) -> str:
-    pattern = rf"{re.escape(header)}\n(.*?)(?=\n## |\Z)"
+    """Extracts everything between [HEADER] and the next [HEADER] or --- or end of string."""
+    pattern = rf"{re.escape(header)}\n(.*?)(?=\n\[|\n---\n|\Z)"
     match = re.search(pattern, content, re.DOTALL)
     return match.group(1).strip() if match else ""
-
-def extract_selected_topic(content: str) -> str:
-    """Extracts the AI-selected topic title from the generated content."""
-    # Looks for: # Selected Topic: [title] or # Selected Topic: [title]
-    match = re.search(r"#+ Selected Topic:\s*(.+)", content)
-    if match:
-        return match.group(1).strip()
-    return ""
 
 def setup_logging():
     logging.basicConfig(
@@ -45,47 +37,35 @@ def main():
     topics = get_global_trending_topics()
     logger.info(f"Gathered {len(topics)} potential topics from around the world.")
     
-    # 2. Generate Draft Content (Creator)
+    # 2. Execute the 4-Prompt Agent Chain
     try:
-        draft_content = generate_content(topics)
+        content, selected_topic, winner_url = generate_content_chain(topics)
     except Exception as e:
-        logger.error(f"Pipeline failed at content generation: {e}")
-        return
-        
-    # 3. Verify and Edit Content (Editor)
-    try:
-        content = edit_content(draft_content)
-    except Exception as e:
-        logger.error(f"Pipeline failed at Editor verification: {e}")
-        # Send an alert to telegram that content was rejected
+        logger.error(f"Pipeline failed at agent chain: {e}")
+        # Send an alert to telegram
         try:
-            send_to_telegram(f"🚨 **ALERT:** The Editor AI rejected today's content due to safety/quality violations.\n\nError: {e}", "<h1>Content Rejected</h1>", datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            send_to_telegram(f"🚨 **ALERT:** The AI pipeline failed.\n\nError: {e}", "<h1>Pipeline Failed</h1>", datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
         except:
             pass
         return
         
     # 4. Parse the content into platform-specific pieces
     logger.info("Parsing content for specific platforms...")
-    blog_post = extract_section(content, "## 📝 1. Website Blog Post")
-    twitter_thread = extract_section(content, "## 🐦 2. Twitter Thread")
-    facebook_post = extract_section(content, "## 📘 3. Facebook Post")
-    instagram_caption = extract_section(content, "## 📸 4. Instagram Caption")
-    source_credits = extract_section(content, "## 🔗 5. Source Credits")
+    blog_title = extract_section(content, "[FINAL_BLOG_TITLE]")
+    blog_body = extract_section(content, "[FINAL_BLOG_BODY_MARKDOWN WITH REFERENCES]")
+    blog_post = f"# {blog_title}\n\n{blog_body}" if blog_title else blog_body
     
-    if source_credits:
-        facebook_post += f"\n\n{source_credits}"
-        twitter_thread += f"\n\n{source_credits}"
-        blog_post += f"\n\n{source_credits}"
-        instagram_caption += f"\n\n{source_credits}"
+    twitter_thread = extract_section(content, "[FINAL_X_THREAD_FOR_MANUAL_POSTING]")
+    facebook_post = extract_section(content, "[FINAL_SOCIAL_CAPTION_FACEBOOK WITH IMAGE BINDING & VERIFIED LINK]")
+    instagram_caption = extract_section(content, "[FINAL_SOCIAL_CAPTION_INSTAGRAM WITH IMAGE BINDING & BIO TEXT]")
+    image_prompt = extract_section(content, "[IMAGE_GENERATOR_THUMBNAIL_PROMPT]")
 
     # 5. Generate Image for Instagram
-    # Use the AI-selected topic (not the raw list) so the image always matches the content
-    selected_topic = extract_selected_topic(content)
-    if not selected_topic:
-        selected_topic = topics[0]['topic'] if topics else "Trending News"
+    # We pass the AI-generated IMAGE_GENERATOR_THUMBNAIL_PROMPT directly.
+    # We still pass selected_topic for the Pillow text overlay.
     logger.info(f"Generating image for AI-selected topic: {selected_topic}")
     date_str = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    image_path, image_url = generate_image(selected_topic, date_str)
+    image_path, image_url = generate_image(selected_topic, date_str, image_prompt)
     
     # 6. Publish to Social Media (Safely wrapped in try/except so one failure doesn't break others)
     publish_results = []

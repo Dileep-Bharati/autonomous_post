@@ -46,17 +46,17 @@ def upload_image(file_path: str) -> str:
         data = res.json()
         return data['files'][0]['url']
 
-def generate_image(topic: str, date_str: str) -> str:
+def generate_image(topic: str, date_str: str, image_prompt: str = None) -> tuple[str, str]:
     """
-    Generates an image for the given topic using the free Pollinations.ai API.
+    Generates an image using the dynamic prompt from the Creative Director Agent.
     Adds a YouTube-style text overlay thumbnail using Pillow.
-    Uploads to catbox.moe to get a public URL.
+    Uploads to uguu.se to get a public URL.
     Saves the image locally and returns a tuple: (local_file_path, public_image_url).
     """
     logger.info(f"Generating custom image for topic: {topic}")
     
-    # We create a highly descriptive prompt for the AI
-    prompt = f"A highly aesthetic, professional, and engaging photograph representing: {topic}. High quality, trending on social media."
+    # We use the prompt from the Creative Director Agent, or fallback to a default
+    prompt = image_prompt if image_prompt else f"A highly aesthetic, professional, and engaging photograph representing: {topic}. High quality, trending on social media."
     encoded_prompt = quote(prompt)
     
     # Pollinations generates images via a simple GET request
