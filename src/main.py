@@ -133,7 +133,7 @@ def main():
     </style>
 </head>
 <body>
-    <img src="{image_url}" alt="{top_topic_title}">
+    <img src="{image_url}" alt="{selected_topic}">
     {website_html_content}
 </body>
 </html>"""

@@ -37,17 +37,10 @@ def edit_content(draft_content: str) -> str:
 
     genai.configure(api_key=api_key)
     
-    selected_model_name = 'gemini-1.5-flash'
-    try:
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                selected_model_name = m.name.replace('models/', '')
-                if 'flash' in selected_model_name:
-                    break
-    except Exception as e:
-        logger.warning(f"Could not list models, defaulting to {selected_model_name}: {e}")
-
-    model = genai.GenerativeModel(selected_model_name)
+    # gemini-2.5-flash: best quality, 20 free requests/day.
+    # GitHub Actions runs once daily so this quota is more than sufficient.
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    logger.info("Using model: gemini-2.5-flash")
     
     prompt = f"Here is the draft content to review:\n\n{draft_content}"
     
