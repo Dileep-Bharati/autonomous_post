@@ -73,7 +73,7 @@ def main():
     try:
         if facebook_post:
             fb = FacebookPublisher()
-            fb_url = fb.publish(facebook_post)
+            fb_url = fb.publish(facebook_post, image_url)
             publish_results.append(f"✅ Facebook: {fb_url}")
     except Exception as e:
         publish_results.append(f"❌ Facebook Failed: {e}")
@@ -128,13 +128,73 @@ def main():
     with open(local_filename, "w", encoding="utf-8") as f:
         f.write(content)
 
-    # 9. Deliver final summary via Telegram
-    summary = f"# 🚀 Publishing Completed - {date_str}\n\n"
-    summary += "## 📈 Results:\n"
-    summary += "\n".join(publish_results)
+    # 9. Build Telegram delivery files
+    # --- Markdown file: full dashboard with status + all content ---
+    md_summary = f"# 🚀 Daily Content Report — {date_str}\n\n"
+    md_summary += "## 📊 Publishing Status\n\n"
+    md_summary += "\n".join(publish_results) + "\n"
+    md_summary += f"\n⏳ **Blog Post** — NOT auto-published. Copy from below and post manually.\n"
+    md_summary += f"⏳ **X (Twitter) Thread** — NOT auto-published. Copy from below and post manually.\n"
+    md_summary += f"\n---\n\n"
+    md_summary += f"## 📘 Facebook Post (✅ Auto-Published)\n\n{facebook_post}\n\n---\n\n"
+    md_summary += f"## 📸 Instagram Caption (✅ Auto-Published)\n\n{instagram_caption}\n\n---\n\n"
+    md_summary += f"## 📝 Blog Post (⏳ Manual — Copy & Paste)\n\n{blog_post}\n\n---\n\n"
+    md_summary += f"## 🐦 X (Twitter) Thread (⏳ Manual — Copy & Paste)\n\n{twitter_thread}\n\n---\n\n"
+    md_summary += f"## 🖼️ Image Prompt Used\n\n{image_prompt}\n"
+
+    # --- HTML file: styled dashboard ---
+    html_blog = markdown.markdown(blog_post)
+    html_summary = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Daily Post Report — {date_str}</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; background: #fafafa; }}
+        h1 {{ color: #111; border-bottom: 2px solid #222; padding-bottom: 10px; }}
+        h2 {{ color: #222; margin-top: 30px; }}
+        .status {{ background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 10px 0; }}
+        .done {{ border-left: 4px solid #22c55e; }}
+        .manual {{ border-left: 4px solid #f59e0b; }}
+        img {{ max-width: 100%; border-radius: 8px; margin: 16px 0; }}
+        pre {{ background: #f5f5f5; padding: 12px; border-radius: 6px; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }}
+        a {{ color: #0066cc; text-decoration: none; }}
+        a:hover {{ text-decoration: underline; }}
+        hr {{ border: none; border-top: 1px solid #ddd; margin: 24px 0; }}
+    </style>
+</head>
+<body>
+    <h1>🚀 Daily Content Report — {date_str}</h1>
     
+    <h2>📊 Publishing Status</h2>
+    <div class="status done"><strong>📘 Facebook</strong> — ✅ Auto-Published with Image</div>
+    <div class="status done"><strong>📸 Instagram</strong> — ✅ Auto-Published with Image</div>
+    <div class="status manual"><strong>📝 Blog Post</strong> — ⏳ Copy from below & post manually</div>
+    <div class="status manual"><strong>🐦 X (Twitter)</strong> — ⏳ Copy from below & post manually</div>
+    
+    <h2>🖼️ Post Image</h2>
+    <img src="{image_url}" alt="{selected_topic}">
+    
+    <hr>
+    <h2>📘 Facebook Post (✅ Done)</h2>
+    <pre>{facebook_post}</pre>
+    
+    <hr>
+    <h2>📸 Instagram Caption (✅ Done)</h2>
+    <pre>{instagram_caption}</pre>
+    
+    <hr>
+    <h2>📝 Blog Post (⏳ Manual)</h2>
+    {html_blog}
+    
+    <hr>
+    <h2>🐦 X (Twitter) Thread (⏳ Manual)</h2>
+    <pre>{twitter_thread}</pre>
+</body>
+</html>"""
+
     try:
-        send_to_telegram(content, markdown.markdown(summary), date_str, image_path)
+        send_to_telegram(md_summary, html_summary, date_str, image_path)
         logger.info("=== Pipeline Completed Successfully ===")
     except Exception as e:
         logger.error(f"Pipeline failed at Telegram delivery: {e}")
